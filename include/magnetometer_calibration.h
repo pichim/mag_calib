@@ -18,14 +18,17 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+
 #pragma once
 
-typedef struct magBiasEstimatorEstimator_s {
+typedef struct magBiasEstimator_s {
     float lambda_min;
     float lambda;
     float b[3];
     float P[3][3];
-} magBiasEstimatorEstimator_t;
+} magBiasEstimator_t;
 
-void magBiasEstimatorEstimatorInit(magBiasEstimatorEstimator_t *magBiasEstimatorEstimator);
-void magBiasEstimatorEstimatorApply(magBiasEstimatorEstimator_t *magBiasEstimatorEstimator, float *mag, float *dmag, float *gyro);
+void magBiasEstimatorInit(magBiasEstimator_t *magBiasEstimator);
+void magBiasEstimatorApply(magBiasEstimator_t *magBiasEstimator, float *mag, float *dmag, float *gyro);
+void magBiasEstimatorSolveRecursively(magBiasEstimator_t *magBiasEstimator, float *mag, float *dmag, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
