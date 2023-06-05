@@ -8,12 +8,14 @@
 int main(int argc, char *argv[])
 {
     float data[17];
-    FILE *dataInputFilePtr = fopen("input/putty_11.log", "r");  
+    FILE *dataInputFilePtr = fopen("input/putty_16.log", "r");  
 
     std::ofstream dataOutputFile("output/mag_calib.txt");
 
-    magBiasEstimator_t magBiasEstimator;
-    magBiasEstimatorInit(&magBiasEstimator);
+    magBiasEstimatorRLS_t magBiasEstimatorRLS;
+    magBiasEstimatorRLSInit(&magBiasEstimatorRLS, 0.96f, 2.0e1f);
+    magBiasEstimatorNLO_t magBiasEstimatorNLO;
+    magBiasEstimatorNLOInit(&magBiasEstimatorNLO, 20.0f, 0.2f, 20000);
     static float mag[3], dmag[3], gyro[3];
     static float magPast[3] = {0.0f, 0.0f, 0.0f};
     static float Ts = 0.02f;
@@ -42,15 +44,20 @@ int main(int argc, char *argv[])
 
         std::chrono::steady_clock::time_point time_begin = std::chrono::steady_clock::now();
         
-        magBiasEstimatorApply(&magBiasEstimator, mag, dmag, gyro);
+        magBiasEstimatorRLSApply(&magBiasEstimatorRLS, mag, dmag, gyro);
+        magBiasEstimatorNLOApply(&magBiasEstimatorNLO, mag, dmag, gyro);
 
         std::chrono::steady_clock::time_point time_end = std::chrono::steady_clock::now();
         int64_t time_elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time_end - time_begin).count();
 
-        std::cout      << magBiasEstimator.b[0] << ", " << magBiasEstimator.b[1] << ", "
-                       << magBiasEstimator.b[2] << ", " << magBiasEstimator.lambda << ", " << time_elapsed_ns << std::endl;
-        dataOutputFile << magBiasEstimator.b[0] << ", " << magBiasEstimator.b[1] << ", "
-                       << magBiasEstimator.b[2] << ", " << magBiasEstimator.lambda << ", " << time_elapsed_ns << std::endl;
+        std::cout      << magBiasEstimatorRLS.b[0] << ", " << magBiasEstimatorRLS.b[1] << ", "
+                       << magBiasEstimatorRLS.b[2] << ", " << magBiasEstimatorRLS.lambda << ", " 
+                       << magBiasEstimatorNLO.b[0] << ", " << magBiasEstimatorNLO.b[1] << ", "
+                       << magBiasEstimatorNLO.b[2] << ", "<< time_elapsed_ns << std::endl;
+        dataOutputFile << magBiasEstimatorRLS.b[0] << ", " << magBiasEstimatorRLS.b[1] << ", "
+                       << magBiasEstimatorRLS.b[2] << ", " << magBiasEstimatorRLS.lambda << ", " 
+                       << magBiasEstimatorNLO.b[0] << ", " << magBiasEstimatorNLO.b[1] << ", "
+                       << magBiasEstimatorNLO.b[2] << ", "<< time_elapsed_ns << std::endl;
 
     }
 

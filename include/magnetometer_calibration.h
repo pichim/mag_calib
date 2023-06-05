@@ -22,13 +22,27 @@
 
 #pragma once
 
-typedef struct magBiasEstimator_s {
+typedef struct magBiasEstimatorRLS_s {
+    float p0;
     float lambda_min;
     float lambda;
     float b[3];
     float P[3][3];
-} magBiasEstimator_t;
+    float Gamma[3][3];
+} magBiasEstimatorRLS_t;
 
-void magBiasEstimatorInit(magBiasEstimator_t *magBiasEstimator);
-void magBiasEstimatorApply(magBiasEstimator_t *magBiasEstimator, float *mag, float *dmag, float *gyro);
-void magBiasEstimatorSolveRecursively(magBiasEstimator_t *magBiasEstimator, float *mag, float *dmag, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
+typedef struct magBiasEstimatorNLO_s {
+    float Ts;
+    float k[2];
+    float b[3];
+    float x[3];
+} magBiasEstimatorNLO_t;
+
+void magBiasEstimatorRLSInit(magBiasEstimatorRLS_t *magBiasEstimatorRLS, const float lambda_min, const float p0);
+void magBiasEstimatorRLSReset(magBiasEstimatorRLS_t *magBiasEstimatorRLS);
+void magBiasEstimatorRLSApply(magBiasEstimatorRLS_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro);
+void magBiasEstimatorRLSSolveRecursively(magBiasEstimatorRLS_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
+
+void magBiasEstimatorNLOInit(magBiasEstimatorNLO_t *magBiasEstimatorRLS, const float k1, const float k2, const uint32_t looptimeUs);
+void magBiasEstimatorNLOReset(magBiasEstimatorNLO_t *magBiasEstimatorRLS);
+void magBiasEstimatorNLOApply(magBiasEstimatorNLO_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro);
