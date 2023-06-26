@@ -42,7 +42,3 @@ void magBiasEstimatorRLSInit(magBiasEstimatorRLS_t *magBiasEstimatorRLS, const f
 void magBiasEstimatorRLSReset(magBiasEstimatorRLS_t *magBiasEstimatorRLS);
 void magBiasEstimatorRLSApply(magBiasEstimatorRLS_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro);
 void magBiasEstimatorRLSSolveRecursively(magBiasEstimatorRLS_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
-
-void magBiasEstimatorNLOInit(magBiasEstimatorNLO_t *magBiasEstimatorRLS, const float k1, const float k2, const uint32_t looptimeUs);
-void magBiasEstimatorNLOReset(magBiasEstimatorNLO_t *magBiasEstimatorRLS);
-void magBiasEstimatorNLOApply(magBiasEstimatorNLO_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro);

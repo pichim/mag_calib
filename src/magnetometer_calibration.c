@@ -68,33 +68,3 @@ void magBiasEstimatorRLSSolveRecursively(magBiasEstimatorRLS_t *mBE, float *mag,
         mBE->lambda = mBE->lambda_min + ( 1.0f - mBE->lambda_min ) * ( zn[0] * zn[0] + zn[1] * zn[1] + zn[2] * zn[2] ) / 3.0f;
     }
 }
-
-void magBiasEstimatorNLOInit(magBiasEstimatorNLO_t *mBE, const float k1, const float k2, const uint32_t looptimeUs)
-{
-    mBE->Ts = looptimeUs * 1e-6f;
-    mBE->k[0] = k1;
-    mBE->k[1] = k2;
-    magBiasEstimatorNLOReset(mBE);
-}
-
-void magBiasEstimatorNLOReset(magBiasEstimatorNLO_t *mBE)
-{
-    for (uint8_t i = 0; i < 3; i++) {
-        mBE->b[i] = 0.0f;
-        mBE->x[i] = 0.0f;
-    }
-        
-}
-
-void magBiasEstimatorNLOApply(magBiasEstimatorNLO_t *mBE, float *mag, float *dmag, float *gyro)
-{
-    float e[3] = {mBE->x[0] - mag[0], mBE->x[1] - mag[1], mBE->x[2] - mag[2]};
-    mBE->b[0] += mBE->Ts * mBE->k[1] * ( e[2] * gyro[1] - e[1] * gyro[2] );
-    mBE->b[1] += mBE->Ts * mBE->k[1] * ( e[0] * gyro[2] - e[2] * gyro[0] );
-    mBE->b[2] += mBE->Ts * mBE->k[1] * ( e[1] * gyro[0] - e[0] * gyro[1] );
-
-    float dx[3] = { mBE->b[0] - mBE->x[0], mBE->b[1] - mBE->x[1], mBE->b[2] - mBE->x[2] };
-    mBE->x[0] -= mBE->Ts * ( e[0] * mBE->k[0] + gyro[2] * dx[1] - gyro[1] * ( dx[2] ));
-    mBE->x[1] -= mBE->Ts * ( e[1] * mBE->k[0] - gyro[2] * dx[0] + gyro[0] * ( dx[2] ));
-    mBE->x[2] -= mBE->Ts * ( e[2] * mBE->k[0] + gyro[1] * dx[0] - gyro[0] * ( dx[1] ));
-}
