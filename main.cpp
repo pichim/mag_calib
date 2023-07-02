@@ -12,8 +12,8 @@ int main(int argc, char *argv[])
 
     std::ofstream dataOutputFile("output/mag_calib.txt");
 
-    magBiasEstimatorRLS_t magBiasEstimatorRLS;
-    magBiasEstimatorRLSInit(&magBiasEstimatorRLS, 0.99f, 1.0e0f);
+    magBiasEstimator_t magBiasEstimator;
+    magBiasEstimatorInit(&magBiasEstimator, 0.99f, 1.0e0f);
     static float mag[3], dmag[3], gyro[3];
     static float magPast[3] = {0.0f, 0.0f, 0.0f};
     static float Ts = 0.1f;
@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
             }
             is_first = false;
         }
-        
         for (uint8_t i = 0; i < 3; i++) {
             dmag[i] = ( mag[i] - magPast[i] ) / Ts;
             magPast[i] = mag[i];
@@ -40,16 +39,15 @@ int main(int argc, char *argv[])
 
         std::chrono::steady_clock::time_point time_begin = std::chrono::steady_clock::now();
         
-        magBiasEstimatorRLSApply(&magBiasEstimatorRLS, mag, dmag, gyro);
+        magBiasEstimatorApply(&magBiasEstimator, mag, dmag, gyro);
 
         std::chrono::steady_clock::time_point time_end = std::chrono::steady_clock::now();
         int64_t time_elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time_end - time_begin).count();
 
-        std::cout      << magBiasEstimatorRLS.b[0] << ", " << magBiasEstimatorRLS.b[1] << ", "
-                       << magBiasEstimatorRLS.b[2] << ", " << magBiasEstimatorRLS.lambda << ", " << time_elapsed_ns << std::endl;
-        dataOutputFile << magBiasEstimatorRLS.b[0] << ", " << magBiasEstimatorRLS.b[1] << ", "
-                       << magBiasEstimatorRLS.b[2] << ", " << magBiasEstimatorRLS.lambda << ", " <<  time_elapsed_ns << std::endl;
-
+        std::cout      << magBiasEstimator.b[0] << ", " << magBiasEstimator.b[1] << ", "
+                       << magBiasEstimator.b[2] << ", " << magBiasEstimator.lambda << ", " << time_elapsed_ns << std::endl;
+        dataOutputFile << magBiasEstimator.b[0] << ", " << magBiasEstimator.b[1] << ", "
+                       << magBiasEstimator.b[2] << ", " << magBiasEstimator.lambda << ", " <<  time_elapsed_ns << std::endl;
     }
 
     fclose(dataInputFilePtr);

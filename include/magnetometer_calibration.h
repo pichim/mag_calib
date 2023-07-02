@@ -18,27 +18,45 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Sources and nomenclature: https://de.wikipedia.org/wiki/RLS-Algorithmus
+ * Paper for estimation problem: https://www.roboticsproceedings.org/rss09/p50.pdf
+ *  Adaptive Estimation of Measurement Bias in Three-Dimensional Field
+ *  Sensors with Angular-Rate Sensors: Theory and Comparative Experimental Evaluation
+ * Idea for adaptive forgetting factor is from: https://link.springer.com/book/10.1007/978-3-642-83530-8
+ * and                                        : Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Diss. 1997
+ * Explicit Matrix inversion is avoided using the source: https://www.wiley.com/en-ie/Optimal+State+Estimation:+Kalman,+H+Infinity,+and+Nonlinear+Approaches-p-9780471708582
+ *
+ * Problem formulation:
+ * y_hat = Sw * b, Sw = Skew( gyro_x, gyro_y, gyro_z )
+ * y     = d/dt mag + Sw * mag
+ * e = y - y_hat, armgin l2(e)
+ *
+ * Recursive Least Squares Algorithm with adaptive forgetting factor:
+ * for j = 1:3
+ *      zn(j) = 1 / ( Sw(j,:) * P * Sw(j,:).' + lambda );
+ *      Gamma(:,j) = P * Sw(j,:).' * zn(j);
+ *      b = b + Gamma(:,j) * e(j);
+ *      P = ( P - Gamma(:,j) * Sw(j,:) * P );
+ *  end
+ *  zn(j) = zn(j) * lambda;
+ *  P = P / lambda;
+ *  lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0;
+*/
+
 #include <stdint.h>
 
 #pragma once
 
-typedef struct magBiasEstimatorRLS_s {
-    float p0;
-    float lambda_min;
+typedef struct magBiasEstimator_s {
+    float lambda_min, p0;
     float lambda;
+    float zn[3];
     float b[3];
     float P[3][3];
-    float Gamma[3][3];
-} magBiasEstimatorRLS_t;
+} magBiasEstimator_t;
 
-typedef struct magBiasEstimatorNLO_s {
-    float Ts;
-    float k[2];
-    float b[3];
-    float x[3];
-} magBiasEstimatorNLO_t;
-
-void magBiasEstimatorRLSInit(magBiasEstimatorRLS_t *magBiasEstimatorRLS, const float lambda_min, const float p0);
-void magBiasEstimatorRLSReset(magBiasEstimatorRLS_t *magBiasEstimatorRLS);
-void magBiasEstimatorRLSApply(magBiasEstimatorRLS_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro);
-void magBiasEstimatorRLSSolveRecursively(magBiasEstimatorRLS_t *magBiasEstimatorRLS, float *mag, float *dmag, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
+void magBiasEstimatorInit(magBiasEstimator_t *magBiasEstimator, const float lambda_min, const float p0);
+void magBiasEstimatorReset(magBiasEstimator_t *magBiasEstimator);
+void magBiasEstimatorApply(magBiasEstimator_t *magBiasEstimator, float *mag, float *dmag, float *gyro);
+void magBiasEstimatorSolveRecursively(magBiasEstimator_t *magBiasEstimator, const float *e, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
