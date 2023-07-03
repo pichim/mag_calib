@@ -5,6 +5,8 @@
 
 #include "magnetometer_calibration.h"
 
+#define XYZ_AXIS_COUNT 3
+
 int main(int argc, char *argv[])
 {
     float data[6]; // mag, gyro
@@ -12,42 +14,52 @@ int main(int argc, char *argv[])
 
     std::ofstream dataOutputFile("output/mag_calib.txt");
 
-    magBiasEstimator_t magBiasEstimator;
-    magBiasEstimatorInit(&magBiasEstimator, 0.99f, 1.0e0f);
-    static float mag[3], dmag[3], gyro[3];
-    static float magPast[3] = {0.0f, 0.0f, 0.0f};
-    static float Ts = 0.1f;
+    const float lambda_min = 0.99f;
+    const float p0 = 1.0e1f;
+    compassBiasEstimator_t compassBiasEstimator;
+    compassBiasEstimatorInit(&compassBiasEstimator, lambda_min, p0);
+    compassBiasEstimatorUpdate(&compassBiasEstimator, lambda_min, p0);
 
-    static bool is_first = true;
+    typedef struct mag_s {
+        float magADC[XYZ_AXIS_COUNT];
+    } mag_t;
+
+    mag_t mag, magPrevious;
+
+    typedef enum {
+        X = 0,
+        Y,
+        Z
+    } axis_e;
+
+    static const float dTime = 0.1f;
+    static bool isFirstMagMeasurement = true;
 
     while( fscanf(dataInputFilePtr, "%f, %f, %f, %f, %f, %f",
                                     &data[0], &data[1], &data[2], &data[3], &data[4], &data[5]) != EOF ) {
         
-        mag[0]  = data[0];  mag[1] = data[1];  mag[2] = data[2];
-        gyro[0] = data[3]; gyro[1] = data[4]; gyro[2] = data[5];
-
-        if (is_first) {
-            for (uint8_t i = 0; i < 3; i++) {
-                magPast[i] = mag[i];
-            }
-            is_first = false;
+        mag.magADC[X] = data[0]; mag.magADC[Y] = data[1]; mag.magADC[Z] = data[2];
+        if (isFirstMagMeasurement) {
+            isFirstMagMeasurement = false;
+            magPrevious = mag;
         }
-        for (uint8_t i = 0; i < 3; i++) {
-            dmag[i] = ( mag[i] - magPast[i] ) / Ts;
-            magPast[i] = mag[i];
-        }
+        const float dmag[3] =  { (mag.magADC[X] - magPrevious.magADC[X]) / dTime,
+                                 (mag.magADC[Y] - magPrevious.magADC[Y]) / dTime,
+                                 (mag.magADC[Z] - magPrevious.magADC[Z]) / dTime };
+        magPrevious = mag;
+        const float gyroADCfRadians[3] =  { data[3], data[4], data[5] };
 
         std::chrono::steady_clock::time_point time_begin = std::chrono::steady_clock::now();
         
-        magBiasEstimatorApply(&magBiasEstimator, mag, dmag, gyro);
+        compassBiasEstimatorApply(&compassBiasEstimator, mag.magADC, dmag, gyroADCfRadians);
 
         std::chrono::steady_clock::time_point time_end = std::chrono::steady_clock::now();
         int64_t time_elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time_end - time_begin).count();
 
-        std::cout      << magBiasEstimator.b[0] << ", " << magBiasEstimator.b[1] << ", "
-                       << magBiasEstimator.b[2] << ", " << magBiasEstimator.lambda << ", " << time_elapsed_ns << std::endl;
-        dataOutputFile << magBiasEstimator.b[0] << ", " << magBiasEstimator.b[1] << ", "
-                       << magBiasEstimator.b[2] << ", " << magBiasEstimator.lambda << ", " <<  time_elapsed_ns << std::endl;
+        std::cout      << compassBiasEstimator.b[0] << ", " << compassBiasEstimator.b[1] << ", "
+                       << compassBiasEstimator.b[2] << ", " << compassBiasEstimator.lambda << ", " << time_elapsed_ns << std::endl;
+        dataOutputFile << compassBiasEstimator.b[0] << ", " << compassBiasEstimator.b[1] << ", "
+                       << compassBiasEstimator.b[2] << ", " << compassBiasEstimator.lambda << ", " <<  time_elapsed_ns << std::endl;
     }
 
     fclose(dataInputFilePtr);

@@ -19,7 +19,7 @@
  */
 
 /**
- * Sources and nomenclature: https://de.wikipedia.org/wiki/RLS-Algorithmus
+ * Source and nomenclature: https://de.wikipedia.org/wiki/RLS-Algorithmus
  * Paper for estimation problem: https://www.roboticsproceedings.org/rss09/p50.pdf
  *  Adaptive Estimation of Measurement Bias in Three-Dimensional Field
  *  Sensors with Angular-Rate Sensors: Theory and Comparative Experimental Evaluation
@@ -48,15 +48,13 @@
 
 #pragma once
 
-typedef struct magBiasEstimator_s {
-    float lambda_min, p0;
-    float lambda;
-    float zn[3];
+typedef struct compassBiasEstimator_s {
+    float lambda_min, lambda, p0;
     float b[3];
     float P[3][3];
-} magBiasEstimator_t;
+} compassBiasEstimator_t;
 
-void magBiasEstimatorInit(magBiasEstimator_t *magBiasEstimator, const float lambda_min, const float p0);
-void magBiasEstimatorReset(magBiasEstimator_t *magBiasEstimator);
-void magBiasEstimatorApply(magBiasEstimator_t *magBiasEstimator, float *mag, float *dmag, float *gyro);
-void magBiasEstimatorSolveRecursively(magBiasEstimator_t *magBiasEstimator, const float *e, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);
+void compassBiasEstimatorInit(compassBiasEstimator_t *compassBiasEstimator, const float lambda_min, const float p0);
+void compassBiasEstimatorUpdate(compassBiasEstimator_t *compassBiasEstimator, const float lambda_min, const float p0);
+void compassBiasEstimatorApply(compassBiasEstimator_t *compassBiasEstimator, float *mag, const float *dmag, const float *gyro);
+void compassBiasEstimatorSolveRecursively(compassBiasEstimator_t *compassBiasEstimator, const float *e, float *zn, const float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign);

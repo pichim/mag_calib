@@ -2,75 +2,85 @@
 
 #include <stdint.h>
 
-void magBiasEstimatorInit(magBiasEstimator_t *mBE, const float lambda_min, const float p0)
+void compassBiasEstimatorInit(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
 {
-    mBE->lambda_min = lambda_min;
-    mBE->p0 = p0;
-    magBiasEstimatorReset(mBE);
-}
+    compassBiasEstimatorUpdate(cBE, lambda_min, p0);
 
-void magBiasEstimatorReset(magBiasEstimator_t *mBE)
-{
-    mBE->lambda = mBE->lambda_min;
+    cBE->lambda = lambda_min;
     for (uint8_t i = 0; i < 3; i++) {
-        mBE->b[i] = 0.0f;
+        cBE->b[i] = 0.0f;
         for (uint8_t j = 0; j < 3; j++) {
-            if (i == j) {
-                mBE->P[i][j] = mBE->p0;
-            } else {
-                mBE->P[i][j] = 0.0f;
+            if (i != j) {
+                cBE->P[i][j] = 0.0f;
             }
         }
-    }
+    }  
 }
 
-void magBiasEstimatorApply(magBiasEstimator_t *mBE, float *mag, float *dmag, float *gyro)
+void compassBiasEstimatorUpdate(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
 {
-    const float e[3] = { dmag[0] + gyro[2] * ( mBE->b[1] - mag[1] ) - gyro[1] * ( mBE->b[2] - mag[2] ),
-                         dmag[1] - gyro[2] * ( mBE->b[0] - mag[0] ) + gyro[0] * ( mBE->b[2] - mag[2] ),
-                         dmag[2] + gyro[1] * ( mBE->b[0] - mag[0] ) - gyro[0] * ( mBE->b[1] - mag[1] ) };
+    cBE->lambda_min = lambda_min;
+    cBE->p0 = p0;
+
+    // update diagonal entries for faster convergence
+    for (uint8_t i = 0; i < 3; i++) {
+        for (uint8_t j = 0; j < 3; j++) {
+            if (i == j) {
+                cBE->P[i][j] = cBE->p0;
+            }
+        }
+    } 
+}
+
+void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag, const float *dmag, const float *gyro)
+{
+    const float e[3] = { dmag[0] + gyro[2] * ( cBE->b[1] - mag[1] ) - gyro[1] * ( cBE->b[2] - mag[2] ),
+                         dmag[1] - gyro[2] * ( cBE->b[0] - mag[0] ) + gyro[0] * ( cBE->b[2] - mag[2] ),
+                         dmag[2] + gyro[1] * ( cBE->b[0] - mag[0] ) - gyro[0] * ( cBE->b[1] - mag[1] ) };
+
+    float zn[3];
 
     // iteration 1 : k = 0; i = 1; j = 2; sign =  1.0f;
-    magBiasEstimatorSolveRecursively(mBE, e, gyro, 0, 1, 2,  1.0f);
+    compassBiasEstimatorSolveRecursively(cBE, e, zn, gyro, 0, 1, 2,  1.0f);
     // iteration 2 : k = 1; i = 0; j = 2; sign = -1.0f;
-    magBiasEstimatorSolveRecursively(mBE, e, gyro, 1, 0, 2, -1.0f);
+    compassBiasEstimatorSolveRecursively(cBE, e, zn, gyro, 1, 0, 2, -1.0f);
     // iteration 3 : k = 2; i = 0; j = 1; sign =  1.0f;
-    magBiasEstimatorSolveRecursively(mBE, e, gyro, 2, 0, 1,  1.0f);
+    compassBiasEstimatorSolveRecursively(cBE, e, zn, gyro, 2, 0, 1,  1.0f);
 
     for (uint8_t i = 0; i < 3; i++) {
-        mBE->zn[i] *= mBE->lambda;
+        zn[i] *= cBE->lambda;
         for (uint8_t j = 0; j < 3; j++) {
-            mBE->P[i][j] /= mBE->lambda;
+            cBE->P[i][j] /= cBE->lambda;
         }
     }
 
-    mBE->lambda = mBE->lambda_min - ( mBE->lambda_min - 1.0f ) * ( mBE->zn[0] * mBE->zn[0] + mBE->zn[1] * mBE->zn[1] + mBE->zn[2] * mBE->zn[2] ) / 3.0f;
+    cBE->lambda = cBE->lambda_min - ( cBE->lambda_min - 1.0f ) * ( zn[0] * zn[0] + zn[1] * zn[1] + zn[2] * zn[2] ) / 3.0f;
 
 }
 
-void magBiasEstimatorSolveRecursively(magBiasEstimator_t *mBE, const float *e, float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign)
+void compassBiasEstimatorSolveRecursively(compassBiasEstimator_t *cBE, const float *e, float *zn, const float *gyro, const uint8_t k, const uint8_t i, const uint8_t j, const float sign)
 {
-    const float dP[3] = { sign * ( mBE->P[0][i] * gyro[j] - mBE->P[0][j] * gyro[i] ),
-                          sign * ( mBE->P[1][i] * gyro[j] - mBE->P[1][j] * gyro[i] ),
-                          sign * ( mBE->P[2][i] * gyro[j] - mBE->P[2][j] * gyro[i] ) };
+    const float dP[3] = { sign * ( cBE->P[0][i] * gyro[j] - cBE->P[0][j] * gyro[i] ),
+                          sign * ( cBE->P[1][i] * gyro[j] - cBE->P[1][j] * gyro[i] ),
+                          sign * ( cBE->P[2][i] * gyro[j] - cBE->P[2][j] * gyro[i] ) };
 
-    mBE->zn[k] = 1.0f / ( mBE->lambda + sign * ( dP[i] * gyro[j] - dP[j] * gyro[i] ) );
+    zn[k] = 1.0f / ( cBE->lambda + sign * ( dP[i] * gyro[j] - dP[j] * gyro[i] ) );
 
-    const float g[3] = { mBE->zn[k] * dP[0],
-                         mBE->zn[k] * dP[1], 
-                         mBE->zn[k] * dP[2] };
+    const float g[3] = { zn[k] * dP[0],
+                         zn[k] * dP[1], 
+                         zn[k] * dP[2] };
 
     for (uint8_t l = 0; l < 3; l++) {
-        mBE->b[l] -= e[k] * g[l];
+        cBE->b[l] -= e[k] * g[l];
     }
 
-    mBE->P[0][0] -= g[0] * dP[0];
-    mBE->P[1][0] -= g[1] * dP[0];
-    mBE->P[1][1] -= g[1] * dP[1];
-    mBE->P[2][0] -= g[2] * dP[0];
-    mBE->P[2][1] -= g[2] * dP[1];
-    mBE->P[2][2] -= g[2] * dP[2];
-    mBE->P[0][1] = mBE->P[1][0];
-    mBE->P[0][2] = mBE->P[2][0];
-    mBE->P[1][2] = mBE->P[2][1];
+    cBE->P[0][0] -= g[0] * dP[0];
+    cBE->P[1][0] -= g[1] * dP[0];
+    cBE->P[1][1] -= g[1] * dP[1];
+    cBE->P[2][0] -= g[2] * dP[0];
+    cBE->P[2][1] -= g[2] * dP[1];
+    cBE->P[2][2] -= g[2] * dP[2];
+    cBE->P[0][1] = cBE->P[1][0];
+    cBE->P[0][2] = cBE->P[2][0];
+    cBE->P[1][2] = cBE->P[2][1];
 }
