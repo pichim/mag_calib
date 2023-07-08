@@ -7,10 +7,12 @@
 
 #define XYZ_AXIS_COUNT 3
 
+// run:.\output\mag_calib.exe "input/data_20230626_bf_LOG087.txt"
+
 int main(int argc, char *argv[])
 {
     float data[6]; // mag, gyro
-    FILE *dataInputFilePtr = fopen("input/data_20230626_bf_LOG087.txt", "r");  
+    FILE *dataInputFilePtr = fopen(argv[1], "r");  // FILE *dataInputFilePtr = fopen("input/data_20230626_bf_LOG087.txt", "r");
 
     std::ofstream dataOutputFile("output/mag_calib.txt");
 
