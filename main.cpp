@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     std::ofstream dataOutputFile("output/mag_calib.txt");
 
     const float lambda_min = 0.99f;
-    const float p0 = 1.0e1f;
+    const float p0 = 1.0e0f;
     compassBiasEstimator_t compassBiasEstimator;
     compassBiasEstimatorInit(&compassBiasEstimator, lambda_min, p0);
     compassBiasEstimatorUpdate(&compassBiasEstimator, lambda_min, p0);
