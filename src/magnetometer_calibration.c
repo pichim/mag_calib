@@ -3,24 +3,25 @@
 #include <stdint.h>
 
 /**
- * Source and nomenclature: https://de.wikipedia.org/wiki/RLS-Algorithmus
+ * Source and nomenclature:
+ *   https://de.wikipedia.org/wiki/RLS-Algorithmus
  * Paper for estimation problem: https://www.roboticsproceedings.org/rss09/p50.pdf
- *  Adaptive Estimation of Measurement Bias in Three-Dimensional Field
- *  Sensors with Angular-Rate Sensors: Theory and Comparative Experimental Evaluation
- * Idea for adaptive forgetting factor is from: https://link.springer.com/book/10.1007/978-3-642-83530-8
- * and: Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Diss. 1997
+ *   Adaptive Estimation of Measurement Bias in Three-Dimensional Field
+ *   Sensors with Angular-Rate Sensors: Theory and Comparative Experimental Evaluation
+ * Idea for adaptive forgetting factor is from:
+ *   https://link.springer.com/book/10.1007/978-3-642-83530-8
+ * and
+ *   Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Diss. 1997
  * Explicit Matrix inversion is avoided using the source:
- * https://www.wiley.com/en-ie/Optimal+State+Estimation:+Kalman,+H+Infinity,+and+Nonlinear+Approaches-p-9780471708582
- * 
- * 
+ *   https://www.wiley.com/en-ie/Optimal+State+Estimation:+Kalman,+H+Infinity,+and+Nonlinear+Approaches-p-9780471708582
+ *  
  * Problem formulation:
  * 
- * armgin l2(e)
- * e = y - y_hat
- * Sw = Skew( gyro_x, gyro_y, gyro_z )
- * y_hat = Sw * b, this is cross(gyro, b)
- * y = d/dt mag + Sw * mag
- * 
+ *  armgin l2(e)
+ *  e = y - y_hat
+ *  Sw = Skew( gyro_x, gyro_y, gyro_z )
+ *  y_hat = Sw * b, this is cross(gyro, b)
+ *  y = d/dt mag + Sw * mag
  * 
  * Recursive Least Squares Algorithm with adaptive forgetting factor:
  * 
@@ -33,7 +34,6 @@
  *  zn(j) = zn(j) * lambda;
  *  P = P / lambda;
  *  lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0;
- * 
  * 
  * Explicit form is:
  * 
