@@ -7,20 +7,22 @@
 
 #define XYZ_AXIS_COUNT 3
 
+#define LAMBDA_MIN 0.99f // minimal adaptive forgetting factor
+#define P0 1.0e0f        // value to initialize P(0) = diag([P0, P0, P0])
+
 // run:.\output\mag_calib.exe "input/data_20230626_bf_LOG087.txt"
 
 int main(int argc, char *argv[])
 {
     float data[6]; // mag, gyro
-    FILE *dataInputFilePtr = fopen(argv[1], "r");  // FILE *dataInputFilePtr = fopen("input/data_20230626_bf_LOG087.txt", "r");
+    FILE *dataInputFilePtr = fopen(argv[1], "r");
 
-    std::ofstream dataOutputFile("output/mag_calib.txt");
+    std::string argInStr = argv[1];
+    std::ofstream dataOutputFile("output/mag_calib_" + argInStr.substr(argInStr.find_last_of("LOG")-2, argInStr.find_last_of("txt")));
 
-    const float lambda_min = 0.99f;
-    const float p0 = 1.0e0f;
     compassBiasEstimator_t compassBiasEstimator;
-    compassBiasEstimatorInit(&compassBiasEstimator, lambda_min, p0);
-    compassBiasEstimatorUpdate(&compassBiasEstimator, lambda_min, p0);
+    compassBiasEstimatorInit(&compassBiasEstimator, LAMBDA_MIN, P0);
+    compassBiasEstimatorUpdate(&compassBiasEstimator, LAMBDA_MIN, P0);
 
     typedef struct mag_s {
         float magADC[XYZ_AXIS_COUNT];

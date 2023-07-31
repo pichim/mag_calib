@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 /**
- * Source and nomenclature:
+ * Source and Nomenclature:
  *   https://de.wikipedia.org/wiki/RLS-Algorithmus
  * Paper for estimation problem: https://www.roboticsproceedings.org/rss09/p50.pdf
  *   Adaptive Estimation of Measurement Bias in Three-Dimensional Field
@@ -11,8 +11,8 @@
  * Idea for adaptive forgetting factor is from:
  *   https://link.springer.com/book/10.1007/978-3-642-83530-8
  * and
- *   Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Diss. 1997
- * Explicit Matrix inversion is avoided using the source:
+ *   "Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Diss. 1997"
+ * Explicit Matrix inversion is avoided using the Source:
  *   https://www.wiley.com/en-ie/Optimal+State+Estimation:+Kalman,+H+Infinity,+and+Nonlinear+Approaches-p-9780471708582
  *  
  * Problem formulation:
@@ -26,10 +26,10 @@
  * Recursive Least Squares Algorithm with adaptive forgetting factor:
  * 
  *  for j = 1:3
- *  zn(j) = 1 / ( Sw(j,:) * P * Sw(j,:).' + lambda );
- *  Gamma(:,j) = P * Sw(j,:).' * zn(j);
- *  b = b + Gamma(:,j) * e(j);
- *  P = ( P - Gamma(:,j) * Sw(j,:) * P );
+ *      zn(j) = 1 / ( Sw(j,:) * P * Sw(j,:).' + lambda );
+ *      Gamma(:,j) = P * Sw(j,:).' * zn(j);
+ *      b = b + Gamma(:,j) * e(j);
+ *      P = ( P - Gamma(:,j) * Sw(j,:) * P );
  *  end
  *  zn(j) = zn(j) * lambda;
  *  P = P / lambda;
@@ -99,6 +99,7 @@
  *  P = P / lambda;
  *  lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0;
  */
+
 void compassBiasEstimatorInit(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
 {
     compassBiasEstimatorUpdate(cBE, lambda_min, p0);
