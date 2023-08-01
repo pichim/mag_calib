@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include <stdio.h>
 
 #include "magnetometer_calibration.h"
 
