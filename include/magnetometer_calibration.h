@@ -29,4 +29,4 @@ typedef struct compassBiasEstimator_s {
 void compassBiasEstimatorInit(compassBiasEstimator_t *compassBiasEstimator, const float lambda_min, const float p0);
 void compassBiasEstimatorUpdate(compassBiasEstimator_t *compassBiasEstimator, const float lambda_min, const float p0);
 void compassBiasEstimatorApply(compassBiasEstimator_t *compassBiasEstimator, float *mag, const float *dmag, const float *gyro);
-void compassBiasEstimatorSolveIterative(compassBiasEstimator_t *compassBiasEstimator, const float *e, float *zn, const float *gyro, const unsigned k, const unsigned i, const unsigned j, const float sign);
+void compassBiasEstimatorSolveIterative(compassBiasEstimator_t *compassBiasEstimator, float *zn, const float *e, const float *gyro, const unsigned k, const unsigned i, const unsigned j, const float sign);

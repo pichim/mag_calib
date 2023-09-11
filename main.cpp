@@ -9,7 +9,7 @@
 #define LAMBDA_MIN 0.99f // minimal adaptive forgetting factor
 #define P0 1.0e0f        // value to initialize P(0) = diag([P0, P0, P0])
 
-// run:.\output\mag_calib.exe "input/data_20230626_bf_LOG087.txt"
+// e.g. run: .\output\mag_calib.exe "input/data_20230626_bf_LOG087.txt"
 
 int main(int argc, char *argv[])
 {
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
         std::cout      << compassBiasEstimator.b[0] << ", " << compassBiasEstimator.b[1] << ", "
                        << compassBiasEstimator.b[2] << ", " << compassBiasEstimator.lambda << ", " << time_elapsed_ns << std::endl;
         dataOutputFile << compassBiasEstimator.b[0] << ", " << compassBiasEstimator.b[1] << ", "
-                       << compassBiasEstimator.b[2] << ", " << compassBiasEstimator.lambda << ", " <<  time_elapsed_ns << std::endl;
+                       << compassBiasEstimator.b[2] << ", " << compassBiasEstimator.lambda << std::endl;
     }
 
     fclose(dataInputFilePtr);

@@ -1,5 +1,7 @@
 #include "magnetometer_calibration.h"
 
+#include <string.h>
+
 /**
  * Source and Nomenclature:
  *   https://de.wikipedia.org/wiki/RLS-Algorithmus
@@ -100,19 +102,9 @@
 
 void compassBiasEstimatorInit(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
 {
-    compassBiasEstimatorUpdate(cBE, lambda_min, p0);
-    
+    memset(cBE, 0, sizeof(*cBE)); // zero contained IEEE754 floats
+    compassBiasEstimatorUpdate(cBE, lambda_min, p0); 
     cBE->lambda = lambda_min;
-
-    // don't know if it is necessary to initialize these as 0
-    for (unsigned i = 0; i < 3; i++) {
-        cBE->b[i] = 0.0f;
-        for (unsigned j = 0; j < 3; j++) {
-            if (i != j) {
-                cBE->P[i][j] = 0.0f;
-            }
-        }
-    }  
 }
 
 void compassBiasEstimatorUpdate(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
@@ -136,11 +128,11 @@ void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag, const fl
     float zn[3];
 
     // iteration 1: k = 0; i = 1; j = 2; sign =  1.0f;
-    compassBiasEstimatorSolveIterative(cBE, e, zn, gyro, 0, 1, 2,  1.0f);
+    compassBiasEstimatorSolveIterative(cBE, &zn[0], e, gyro, 0, 1, 2,  1.0f);
     // iteration 2: k = 1; i = 0; j = 2; sign = -1.0f;
-    compassBiasEstimatorSolveIterative(cBE, e, zn, gyro, 1, 0, 2, -1.0f);
+    compassBiasEstimatorSolveIterative(cBE, &zn[0], e, gyro, 1, 0, 2, -1.0f);
     // iteration 3: k = 2; i = 0; j = 1; sign =  1.0f;
-    compassBiasEstimatorSolveIterative(cBE, e, zn, gyro, 2, 0, 1,  1.0f);
+    compassBiasEstimatorSolveIterative(cBE, &zn[0], e, gyro, 2, 0, 1,  1.0f);
 
     // zn = zn * lambda
     // P = P / lambda
@@ -151,11 +143,11 @@ void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag, const fl
         }
     }
 
-    // lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0
+    // lambda = lambda_min - (lambda_min - 1.0) * ( zn.' * zn ) / 3.0
     cBE->lambda = cBE->lambda_min - (cBE->lambda_min - 1.0f) * (zn[0] * zn[0] + zn[1] * zn[1] + zn[2] * zn[2]) / 3.0f;
 }
 
-void compassBiasEstimatorSolveIterative(compassBiasEstimator_t *cBE, const float *e, float *zn, const float *gyro, const unsigned k, const unsigned i, const unsigned j, const float sign)
+void compassBiasEstimatorSolveIterative(compassBiasEstimator_t *cBE, float *zn, const float *e, const float *gyro, const unsigned k, const unsigned i, const unsigned j, const float sign)
 {
     const float dP[3] = {sign * (cBE->P[0][i] * gyro[j] - cBE->P[0][j] * gyro[i]),
                          sign * (cBE->P[1][i] * gyro[j] - cBE->P[1][j] * gyro[i]),
@@ -177,6 +169,7 @@ void compassBiasEstimatorSolveIterative(compassBiasEstimator_t *cBE, const float
     cBE->P[2][0] -= g[2] * dP[0];
     cBE->P[2][1] -= g[2] * dP[1];
     cBE->P[2][2] -= g[2] * dP[2];
+    // fill symmetric elements
     cBE->P[0][1] = cBE->P[1][0];
     cBE->P[0][2] = cBE->P[2][0];
     cBE->P[1][2] = cBE->P[2][1];
