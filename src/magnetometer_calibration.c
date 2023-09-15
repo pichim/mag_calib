@@ -100,6 +100,7 @@
  *  lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0;
  */
 
+// initialize the compass bias estimator
 void compassBiasEstimatorInit(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
 {
     memset(cBE, 0, sizeof(*cBE)); // zero contained IEEE754 floats
@@ -107,6 +108,8 @@ void compassBiasEstimatorInit(compassBiasEstimator_t *cBE, const float lambda_mi
     cBE->lambda = lambda_min;
 }
 
+// reset / update the compass bias estimator, this can be used after the compass bias estimator did
+// already run to achieve faster convergence for the next run
 void compassBiasEstimatorUpdate(compassBiasEstimator_t *cBE, const float lambda_min, const float p0)
 {
     cBE->lambda_min = lambda_min;
@@ -118,6 +121,7 @@ void compassBiasEstimatorUpdate(compassBiasEstimator_t *cBE, const float lambda_
     } 
 }
 
+// apply one estimation step of the compass bias estimator
 void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag, const float *dmag, const float *gyro)
 {
     //  e = dmag + cross(gyro, mag - b)
