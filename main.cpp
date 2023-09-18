@@ -2,10 +2,10 @@
 #include <fstream>
 #include <chrono>
 
-#include "math.h"
-#include "maths.h"
 #include "axis.h"
-#include "filter.h"
+//#include "filter.h"
+//#include "math.h"
+//#include "maths.h"
 #include "magnetometer_calibration.h"
 
 #define LAMBDA_MIN 0.995f                                    // minimal adaptive forgetting factor, range: [0, 1]
@@ -19,19 +19,11 @@ int main(int argc, char *argv[])
 {
     typedef struct mag_s {
         float magADC[XYZ_AXIS_COUNT];
-        float magADCf[XYZ_AXIS_COUNT];
     } mag_t;
 
-    mag_t mag;
-    static pt3Filter_t magLpf[XYZ_AXIS_COUNT];
+    static mag_t mag, magPrevious;
 
     const float actualCompassRateHz = TASK_COMPASS_RATE_HZ;
-
-    const float magCutoffHz = 7.0f;
-    const float magGain = pt3FilterGain(magCutoffHz, 1.0f / TASK_COMPASS_RATE_HZ); // Todo: Make this configurable according to the mag unit that is used
-    for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-        pt3FilterInit(&magLpf[axis], magGain);
-    }
 
     float data[6]; // mag, gyro
     FILE *dataInputFilePtr = fopen(argv[1], "r");
@@ -46,42 +38,31 @@ int main(int argc, char *argv[])
         
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
             mag.magADC[axis] = data[axis];
-            mag.magADCf[axis] = pt3FilterApply(&magLpf[axis], mag.magADC[axis]);
         }
 
         // avoid initial transient phase
         static bool isFirstMagMeasurement = true;
-        static float magPreviousFiltered[XYZ_AXIS_COUNT];
         if (isFirstMagMeasurement) {
             isFirstMagMeasurement = false;
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                magPreviousFiltered[axis] = mag.magADCf[axis];
+                magPrevious.magADC[axis] = mag.magADC[axis];
             }
         }
 
         // calculate mag derivative
-        const float magDerivative[XYZ_AXIS_COUNT] = {(mag.magADCf[X] - magPreviousFiltered[X]) * actualCompassRateHz,
-                                                     (mag.magADCf[Y] - magPreviousFiltered[Y]) * actualCompassRateHz,
-                                                     (mag.magADCf[Z] - magPreviousFiltered[Z]) * actualCompassRateHz};
-        for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            magPreviousFiltered[axis] = mag.magADCf[axis];
-        }
+        const float magDerivative[XYZ_AXIS_COUNT] = {(mag.magADC[X] - magPrevious.magADC[X]) * actualCompassRateHz,
+                                                     (mag.magADC[Y] - magPrevious.magADC[Y]) * actualCompassRateHz,
+                                                     (mag.magADC[Z] - magPrevious.magADC[Z]) * actualCompassRateHz};
 
         // get downsampled gyro data
         const float gyroAverageRadians[XYZ_AXIS_COUNT] =  {data[3], data[4], data[5]};        
 
-/*         std::cout << mag.magADC[X] << ", "  << mag.magADC[Y] << ", " << mag.magADC[Z] << ", "
-                  << mag.magADCf[X] << ", "  << mag.magADCf[Y] << ", " << mag.magADCf[Z] << ", "
-                  << magDerivative[X] << ", "  << magDerivative[Y] << ", " << magDerivative[Z] << ", "
-                  << gyroAverageRadians[X] << ", " << gyroAverageRadians[Y] << ", " << gyroAverageRadians[Z] << std::endl;
-
-        static unsigned cntr = 0;
-        if (++cntr == 4)
-            return(0); */
+        // copy mag to be able to build mag derivative
+        magPrevious = mag;
 
         // run compassBiasEstimatorApply and measure time
         std::chrono::steady_clock::time_point time_begin_ns = std::chrono::steady_clock::now();        
-        compassBiasEstimatorApply(&compassBiasEstimator, mag.magADCf, magDerivative, gyroAverageRadians);
+        compassBiasEstimatorApply(&compassBiasEstimator, mag.magADC, magDerivative, gyroAverageRadians);
         int64_t time_elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time_begin_ns - std::chrono::steady_clock::now()).count();
 
         // print results to terminal and file
