@@ -11,16 +11,15 @@
  * Idea for adaptive forgetting factor is from:
  *   https://link.springer.com/book/10.1007/978-3-642-83530-8
  * and
- *   "Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Diss. 1997"
+ *   "Ein Beitrag zur on-line adaptiven Regelung elektromechanischer Antriebsregelstrecken, Dissertation 1997"
  * Explicit Matrix inversion is avoided using the Source:
  *   https://www.wiley.com/en-ie/Optimal+State+Estimation:+Kalman,+H+Infinity,+and+Nonlinear+Approaches-p-9780471708582
  *  
  * Problem formulation:
  * 
- *  armgin l2(e)
+ *  argmin l2(e)
  *  e = y - y_hat
- *  Sw = Skew( gyro_x, gyro_y, gyro_z )
- *  y_hat = Sw * b, this is cross(gyro, b)
+ *  y_hat = Sw * b, where Sw * b = gyro x b and Sw = Skew( gyro_x, gyro_y, gyro_z )
  *  y = d/dt mag + Sw * mag
  * 
  * Recursive Least Squares Algorithm with adaptive forgetting factor:
@@ -31,71 +30,8 @@
  *      b = b + Gamma(:,j) * e(j);
  *      P = ( P - Gamma(:,j) * Sw(j,:) * P );
  *  end
+ * 
  *  zn(j) = zn(j) * lambda;
- *  P = P / lambda;
- *  lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0;
- * 
- * Explicit form is:
- * 
- *  e = [dmag(i,1) + gyro(i,3) * ( b(2) - mag(i,2) ) - gyro(i,2) * ( b(3) - mag(i,3) ); ...
- *       dmag(i,2) - gyro(i,3) * ( b(1) - mag(i,1) ) + gyro(i,1) * ( b(3) - mag(i,3) ); ...
- *       dmag(i,3) + gyro(i,2) * ( b(1) - mag(i,1) ) - gyro(i,1) * ( b(2) - mag(i,2) )];
- * 
- *  // iteration 1
- *  dP = [P(2,1)*gyro(i,3) - P(3,1)*gyro(i,2); ...
- *        P(2,2)*gyro(i,3) - P(3,2)*gyro(i,2); ...
- *        P(3,2)*gyro(i,3) - P(3,3)*gyro(i,2)];
- *  zn(1) = 1 / ( lambda + gyro(i,3)*dP(2) - gyro(i,2)*dP(3) );
- *  g(1) = zn(1) * dP(1);
- *  g(2) = zn(1) * dP(2);
- *  g(3) = zn(1) * dP(3);
- *  b(1) = b(1) - e(1) * g(1);
- *  b(2) = b(2) - e(1) * g(2);
- *  b(3) = b(3) - e(1) * g(3);
- *  P(1,1) = P(1,1) - g(1) * dP(1);
- *  P(2,1) = P(2,1) - g(2) * dP(1);
- *  P(2,2) = P(2,2) - g(2) * dP(2);
- *  P(3,1) = P(3,1) - g(3) * dP(1);
- *  P(3,2) = P(3,2) - g(3) * dP(2);
- *  P(3,3) = P(3,3) - g(3) * dP(3);
- *
- *  // iteration 2
- *  dP = [P(3,1)*gyro(i,1) - P(1,1)*gyro(i,3); ...
- *        P(3,2)*gyro(i,1) - P(2,1)*gyro(i,3); ...
- *        P(3,3)*gyro(i,1) - P(3,1)*gyro(i,3)];
- *  zn(2) = 1/(lambda - gyro(i,3)*dP(1) + gyro(i,1)*dP(3));
- *  g(1) = zn(2) * dP(1);
- *  g(2) = zn(2) * dP(2);
- *  g(3) = zn(2) * dP(3);
- *  b(1) = b(1) - e(2) * g(1);
- *  b(2) = b(2) - e(2) * g(2);
- *  b(3) = b(3) - e(2) * g(3);
- *  P(1,1) = P(1,1) - g(1) * dP(1);
- *  P(2,1) = P(2,1) - g(2) * dP(1);
- *  P(2,2) = P(2,2) - g(2) * dP(2);
- *  P(3,1) = P(3,1) - g(3) * dP(1);
- *  P(3,2) = P(3,2) - g(3) * dP(2);
- *  P(3,3) = P(3,3) - g(3) * dP(3);
- *
- *  // iteration 3
- *  dP = [P(1,1)*gyro(i,2) - P(2,1)*gyro(i,1); ...
- *        P(2,1)*gyro(i,2) - P(2,2)*gyro(i,1); ...
- *        P(3,1)*gyro(i,2) - P(3,2)*gyro(i,1)];
- *  zn(3) = 1/(lambda + gyro(i,2)*dP(1) - gyro(i,1)*dP(2));
- *  g(1) = zn(3) * dP(1);
- *  g(2) = zn(3) * dP(2);
- *  g(3) = zn(3) * dP(3);
- *  b(1) = b(1) - e(3) * g(1);
- *  b(2) = b(2) - e(3) * g(2);
- *  b(3) = b(3) - e(3) * g(3);
- *  P(1,1) = P(1,1) - g(1) * dP(1);
- *  P(2,1) = P(2,1) - g(2) * dP(1);
- *  P(2,2) = P(2,2) - g(2) * dP(2);
- *  P(3,1) = P(3,1) - g(3) * dP(1);
- *  P(3,2) = P(3,2) - g(3) * dP(2);
- *  P(3,3) = P(3,3) - g(3) * dP(3);
-
- *  zn = zn * lambda;
  *  P = P / lambda;
  *  lambda = lambda_min + (1 - lambda_min) * ( zn.' * zn ) / 3.0;
  */

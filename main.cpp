@@ -3,9 +3,6 @@
 #include <chrono>
 
 #include "axis.h"
-//#include "filter.h"
-//#include "math.h"
-//#include "maths.h"
 #include "magnetometer_calibration.h"
 
 #define LAMBDA_MIN 0.995f                                    // minimal adaptive forgetting factor, range: [0, 1]
@@ -13,7 +10,7 @@
 
 #define TASK_COMPASS_RATE_HZ 10
 
-// e.g. run: .\output\mag_calib.exe "input/20230911_apex5_mag_on_head_00.txt"
+// run in terminal: .\output\mag_calib.exe "input/20230911_apex5_mag_on_head_00.txt"
 
 int main(int argc, char *argv[])
 {
