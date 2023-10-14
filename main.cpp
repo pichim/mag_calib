@@ -8,7 +8,7 @@
 #define LAMBDA_MIN 0.95f // minimal adaptive forgetting factor, range: [0.90, 0.99], currently tuned for 200 Hz
                          // (TASK_COMPASS_RATE_HZ) and update rate of compassBiasEstimatorApply(), not the mag readout
                          // rate, so it might need to be adjusted TASK_COMPASS_RATE_HZ is changed
-#define P0 1.0e2f        // value to initialize P(0) = diag([P0, P0, P0]), typically in range: (1, 1000)
+#define P0 1.0e2f        // value to initialize P(0) = diag([P0, P0, P0, P0]), typically in range: (1, 1000)
 
 // run in terminal: .\output\mag_calib.exe "input/20231014_apex5_mag_on_tpu_03.txt"
 
