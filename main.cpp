@@ -5,12 +5,12 @@
 #include "axis.h"
 #include "magnetometer_calibration.h"
 
-#define LAMBDA_MIN 0.99f                                     // minimal adaptive forgetting factor, range: [0, 1]
-#define P0 1.0e0f                                            // value to initialize P(0) = diag([P0, P0, P0]), typically in range: (0, 1000)
-#define SCALE_MAG 5.0e2f                                     // scale for magnetometer data, method is sensitive, this was optimized for raw mag data
-                                                             // in the range (1000, 2000)
+#define LAMBDA_MIN 0.95f // minimal adaptive forgetting factor, range: [0.90, 0.99], currently tuned for 200 Hz
+                         // (TASK_COMPASS_RATE_HZ) and update rate of compassBiasEstimatorApply(), not the mag readout
+                         // rate, so it might need to be adjusted TASK_COMPASS_RATE_HZ is changed
+#define P0 1.0e2f        // value to initialize P(0) = diag([P0, P0, P0]), typically in range: (1, 1000)
 
-// run in terminal: .\output\mag_calib.exe "input/20231008_apex5_mag_on_tpu_00.txt"
+// run in terminal: .\output\mag_calib.exe "input/20231014_apex5_mag_on_tpu_03.txt"
 
 int main(int argc, char *argv[])
 {
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
         // run compassBiasEstimatorApply and measure time
         std::chrono::steady_clock::time_point time_begin_ns = std::chrono::steady_clock::now();        
-        compassBiasEstimatorApply(&compassBiasEstimator, mag.magADC, SCALE_MAG);
+        compassBiasEstimatorApply(&compassBiasEstimator, mag.magADC);
         int64_t time_elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(time_begin_ns - std::chrono::steady_clock::now()).count();
 
         // print results to terminal and file

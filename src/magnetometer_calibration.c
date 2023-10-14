@@ -30,15 +30,13 @@ void compassBiasEstimatorUpdate(compassBiasEstimator_t *cBE, const float lambda_
 }
 
 // apply one estimation step of the compass bias estimator
-void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag, const float scaleMag)
+void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag)
 {
-    float magScaled[3] = {mag[0] / scaleMag, mag[1] / scaleMag, mag[2] / scaleMag};
-
     // update phi
     float phi[4];
-    phi[0] = sq(magScaled[0]) + sq(magScaled[1]) + sq(magScaled[2]);
+    phi[0] = sq(mag[0]) + sq(mag[1]) + sq(mag[2]);
     for (unsigned i = 0; i < 3; i++) {
-        phi[i + 1] = magScaled[i];
+        phi[i + 1] = mag[i];
     }
 
     // update e
@@ -84,7 +82,7 @@ void compassBiasEstimatorApply(compassBiasEstimator_t *cBE, float *mag, const fl
 
     // bias update
     for (unsigned i = 0; i < 3; i++) {
-        cBE->b[i] = (-0.5f * cBE->theta[i + 1] / cBE->theta[0]) * scaleMag;
+        cBE->b[i] = -0.5f * cBE->theta[i + 1] / cBE->theta[0];
     }
 
     // compute zn
